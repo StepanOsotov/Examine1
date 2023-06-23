@@ -1,0 +1,53 @@
+server
+{
+#FastCGI begin
+  listen 192.168.1.103:80;
+  root /var/www/top/html;
+  # location’ы всех типов сопоставляются только с
+  # URI-частью строки запроса БЕЗ АРГУМЕНТОВ.
+#FastCGI base webpage
+  location = /
+  {
+    index index.html;
+    try_files $uri $uri/ =404;
+  }
+#FastCGI button webpage
+  location /esp32_U
+  {
+    index esp32_U.html;
+    try_files $uri $uri/esp32_U/ =404;
+  }
+  location /esp32_I
+  {
+    index esp32_I.html;
+    try_files $uri $uri/esp32_I/ =404;
+  }
+  location /esp8266_R
+  {
+    index esp8266_R.html;
+    try_files $uri $uri/esp8266_R/ =404;
+  }
+#FastCGI bash
+  # Для данного location будем использовать только FastCGI
+  location ~* \.sh$
+#  location acc.sh
+  {
+    root /var/www/top/html/cgi;
+    gzip           off;
+    fastcgi_pass   unix:/var/run/fcgiwrap.socket;
+
+    # Эту часть можно вынести в отдельный файл и делать include fastcgi_params;
+
+    include /etc/nginx/fastcgi_params;
+
+    fastcgi_param  SCRIPT_FILENAME    $document_root$fastcgi_script_name;
+    fastcgi_param  REQUEST_BODY       $request_body;
+
+    # According to RFC3875 (https://tools.ietf.org/html/rfc3875#section-4.1.14) in SERVER_NAME
+    # we should put actual hostname user came to. For nginx it is in $host
+    # This will allow to run multihost instances
+
+    fastcgi_param  SERVER_NAME        $host;
+  }
+#FastCGI end
+}
