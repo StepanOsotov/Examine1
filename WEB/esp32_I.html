@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset='UTF-8'>
+	<title>ESP32 Ток</title>
+	<style>
+			st1
+			{
+				font-family: Verdana, Arial, Helvetica, sans-serif;
+				font-size: 18pt;
+        width: 30%;
+        height: 5%;
+			}
+      body
+      {
+        background:#000;
+        color:#ddd;
+      }
+			#textIPaddr
+			{
+				border: 5px solid rgb(158, 34, 34);
+				max-width: 400px;
+				height: 5vh;
+				margin: auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+        color: rgb(27, 215, 49);
+			}
+      #response_0, #response_1, #response_2, #response_3
+      {
+        border: none;
+        padding: 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        border-radius: 50%;
+      }
+      #resp_in_0, #resp_in_1, #resp_in_2, #resp_in_3
+      {
+        border: 3px solid #9370DB;
+        padding: 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        background-color: white;
+      }
+	</style>
+	</head>
+	<body>
+		<p id='textIPaddr' ><b>IP address : </b>
+			<input id='idGetIP'
+             type='text'
+             placeholder='xxx.xxx.xxx.xxx'
+             value='192.168.137.26'/>
+		</p>
+		<h1 style='text-align: center'>WEB страниа ESP32 (Ток)</h1>
+    <h3>установка выходных пинов на ESP32</h3>
+		<p	style='text-align: center'>
+			<!-- ==================================== -->
+      <button	id='but_out_0'
+              type='submit'
+              onclick='func_out_0()'
+              ><st1> OUT 0 </st1>
+      </button>
+      <button	id='response_0'></button>
+			<!-- ==================================== -->
+      <button	id='but_out_1'
+              type='submit'
+              onclick='func_out_1()'
+              ><st1> OUT 1 </st1>
+      </button>
+      <button	id='response_1'></button>
+			<!-- ==================================== -->
+      <button	id='but_out_2'
+              type='submit'
+              onclick='func_out_2()'
+              ><st1> OUT 2 </st1>
+      </button>
+      <button	id='response_2'></button>
+			<!-- ==================================== -->
+      <button	id='but_out_3'
+              type='submit'
+              onclick='func_out_3()'
+              ><st1> OUT 4 </st1>
+      </button>
+      <button	id='response_3'></button>
+			<!-- ==================================== -->
+		</p>
+    
+    <h3>получение состояния входных ножек ESP32</h3>
+    <p	style='text-align: center'>
+      <button	id='but_in_0'
+              onclick='func_in_0()'
+              ><st1> IN 0 </st1>
+      </button>
+      <button	id='resp_in_0'></button>
+			<!-- ==================================== -->
+      <button	id='but_in_1'
+              onclick='func_in_1()'
+              ><st1> IN 1 </st1>
+      </button>
+      <button	id='resp_in_1'></button>
+			<!-- ==================================== -->
+      <button	id='but_in_2'
+              onclick='func_in_2()'
+              ><st1> IN 2 </st1>
+      </button>
+      <button	id='resp_in_2'></button>
+			<!-- ==================================== -->
+      <button	id='but_in_3'
+              onclick='func_in_3()'
+              ><st1> IN 3 </st1>
+      </button>
+      <button	id='resp_in_3'></button>
+			<!-- ==================================== -->
+		</p>
+    
+    <h3>задайте положение слайдера</h3>
+    
+    <div style='text-align: center'>
+      <input  id='range_tx'
+              type='range'
+              min='1'
+              max='500'
+              value='50'
+							onclick='func_slider_tx()'>
+    </div>
+    
+    <h3>возвращенное положение слайдера</h3>
+    
+    <div style='text-align: center'>
+      <input  id='range_rx'
+              type='range'
+              min='1'
+              max='500'
+              value='50'
+							onclick='func_slider_rx()'>
+    </div>
+    
+		<script>
+			//-----------------A D D I T I O N A L - F U N C T I O N
+			function f_draw_all_url()
+			{
+        let text = document.getElementById('idGetIP').value;
+        return 'http://' + text + '/';
+			}
+    
+			var url_path;
+			var ip;
+			var requestURL;
+			var payloadJSON;
+			
+			//-----------------D A T A   F O R   L E D
+      
+			var rx_led_left = 0;
+      var response_led = ['response_0', 'response_1', 'response_2', 'response_3'];
+      var buttonsIDsLed = ['but_out_0', 'but_out_1', 'but_out_2', 'but_out_3'];
+      var currentButtonLed = 0;
+			var outPinTextLed = ['leds', 'leds', 'leds', 'leds'];
+			var whatIsLeds = ['led_red', 'led_green', 'led_blue', 'led_yellow'];
+			var counterLed = [0, 0, 0, 0];
+			var isPressButtonLed = [0, 0, 0, 0];
+      
+      //-----------------V A L U E   D E F A U L T
+      
+      document.getElementById(buttonsIDsLed[0]).style.background = '#483D8B';
+      document.getElementById(buttonsIDsLed[1]).style.background = '#483D8B';
+      document.getElementById(buttonsIDsLed[2]).style.background = '#483D8B';
+      document.getElementById(buttonsIDsLed[3]).style.background = '#483D8B';
+			
+			document.getElementById(response_led[0]).style.background = 'gray';
+			document.getElementById(response_led[1]).style.background = 'gray';
+			document.getElementById(response_led[2]).style.background = 'gray';
+			document.getElementById(response_led[3]).style.background = 'gray';
+      
+			//-----------------B U T T O N - O U T   0
+			function func_out_0()
+			{
+        currentButtonLed = 0;
+        let stingPress;
+        if(isPressButtonLed[currentButtonLed] === 0)
+        {
+          isPressButtonLed[currentButtonLed] = 1;
+          stingPress = 'pressed';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#B8860B';
+        }
+        else
+        {
+          isPressButtonLed[currentButtonLed] = 0;
+          stingPress = 'released';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#483D8B';
+        }
+				url_path = f_draw_all_url();
+				url_path += outPinTextLed[currentButtonLed];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsLeds[currentButtonLed],
+                       'counter' : counterLed[currentButtonLed],};
+				counterLed[currentButtonLed]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+					//document.getElementById('response_1').value += 'payloadJSON : ' + JSON.stringify(payloadJSON);
+          console.log(JSON.stringify(response_led[currentButtonLed] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_led_left = payloadJSON[whatIsLeds[currentButtonLed]];
+					if(rx_led_left === 1)
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'red';
+					}
+					else
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'gray';
+					}
+				});
+			}
+			//-----------------B U T T O N - O U T   1
+			function func_out_1()
+			{
+        currentButtonLed = 1;
+        let stingPress;
+        if(isPressButtonLed[currentButtonLed] === 0)
+        {
+          isPressButtonLed[currentButtonLed] = 1;
+          stingPress = 'pressed';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#B8860B';
+        }
+        else
+        {
+          isPressButtonLed[currentButtonLed] = 0;
+          stingPress = 'released';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#483D8B';
+        }
+				url_path = f_draw_all_url();
+				url_path += outPinTextLed[currentButtonLed];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsLeds[currentButtonLed],
+                       'counter' : counterLed[currentButtonLed],};
+				counterLed[currentButtonLed]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_led[currentButtonLed] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_led_left = payloadJSON[whatIsLeds[currentButtonLed]];
+					if(rx_led_left === 1)
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'green';
+					}
+					else
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'gray';
+					}
+				});
+			}
+			//-----------------B U T T O N - O U T   2
+			function func_out_2()
+			{
+        currentButtonLed = 2;
+        let stingPress;
+        if(isPressButtonLed[currentButtonLed] === 0)
+        {
+          isPressButtonLed[currentButtonLed] = 1;
+          stingPress = 'pressed';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#B8860B';
+        }
+        else
+        {
+          isPressButtonLed[currentButtonLed] = 0;
+          stingPress = 'released';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#483D8B';
+        }
+				url_path = f_draw_all_url();
+				url_path += outPinTextLed[currentButtonLed];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsLeds[currentButtonLed],
+                       'counter' : counterLed[currentButtonLed],};
+				counterLed[currentButtonLed]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_led[currentButtonLed] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_led_left = payloadJSON[whatIsLeds[currentButtonLed]];
+					if(rx_led_left === 1)
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'blue';
+					}
+					else
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'gray';
+					}
+				});
+        
+			}
+			//-----------------B U T T O N - O U T   3
+			function func_out_3()
+			{
+        currentButtonLed = 3;
+        let stingPress;
+        if(isPressButtonLed[currentButtonLed] === 0)
+        {
+          isPressButtonLed[currentButtonLed] = 1;
+          stingPress = 'pressed';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#B8860B';
+        }
+        else
+        {
+          isPressButtonLed[currentButtonLed] = 0;
+          stingPress = 'released';
+          document.getElementById(buttonsIDsLed[currentButtonLed]).style.background = '#483D8B';
+        }
+				url_path = f_draw_all_url();
+				url_path += outPinTextLed[currentButtonLed];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsLeds[currentButtonLed],
+                       'counter' : counterLed[currentButtonLed],};
+				counterLed[currentButtonLed]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_led[currentButtonLed] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_led_left = payloadJSON[whatIsLeds[currentButtonLed]];
+					if(rx_led_left === 1)
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'yellow';
+					}
+					else
+					{
+						document.getElementById(response_led[currentButtonLed]).style.background = 'gray';
+					}
+				});
+			}
+			
+			//-----------------D A T A   F O R   I N P U T
+      
+			var rx_input = '';
+      var response_in = ['resp_in_0', 'resp_in_1', 'resp_in_2', 'resp_in_3'];
+      var buttonsIDsIn = ['but_in_0', 'but_in_1', 'but_in_2', 'but_in_3'];
+      var currentButtonIn = 0;
+			var outPinTextIn = ['inputs', 'inputs', 'inputs', 'inputs'];
+			var whatIsIn = ['input_0', 'input_1', 'input_2', 'input_3'];
+			var counterIn = [0, 0, 0, 0];
+			var isPressButtonIn = [0, 0, 0, 0];
+      var receiveJsonIn = 'button';
+      
+      //-----------------V A L U E   D E F A U L T
+      
+      document.getElementById(buttonsIDsIn[0]).style.background = 'indigo';
+      document.getElementById(buttonsIDsIn[1]).style.background = 'indigo';
+      document.getElementById(buttonsIDsIn[2]).style.background = 'indigo';
+      document.getElementById(buttonsIDsIn[3]).style.background = 'indigo';
+			
+			document.getElementById(response_in[0]).style.background = 'gray';
+			document.getElementById(response_in[1]).style.background = 'gray';
+			document.getElementById(response_in[2]).style.background = 'gray';
+			document.getElementById(response_in[3]).style.background = 'gray';
+			
+			//-----------------B U T T O N - I N   0
+			function func_in_0()
+			{
+        currentButtonIn = 0;
+        let stingPress;
+        stingPress = 'pressed';
+        
+				url_path = f_draw_all_url();
+				url_path += outPinTextIn[currentButtonIn];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsIn[currentButtonIn],
+                       'counter' : counterIn[currentButtonIn],};
+				counterIn[currentButtonIn]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_in[currentButtonIn] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_input = payloadJSON[receiveJsonIn];
+          
+          //console.log(rx_input);
+          
+					if(rx_input === '0.0V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #9370DB';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'gray';
+					}
+					if(rx_input === '3.3V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #00008B';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'red';
+					}
+				});
+			}
+			//-----------------B U T T O N - I N   1
+			function func_in_1()
+			{
+        currentButtonIn = 1;
+        let stingPress;
+        stingPress = 'pressed';
+        
+				url_path = f_draw_all_url();
+				url_path += outPinTextIn[currentButtonIn];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsIn[currentButtonIn],
+                       'counter' : counterIn[currentButtonIn],};
+				counterIn[currentButtonIn]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_in[currentButtonIn] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_input = payloadJSON[receiveJsonIn];
+          
+          //console.log(rx_input);
+          
+					if(rx_input === '0.0V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #9370DB';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'gray';
+					}
+					if(rx_input === '3.3V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #00008B';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'red';
+					}
+				});
+			}
+			//-----------------B U T T O N - I N   2
+			function func_in_2()
+			{
+        currentButtonIn = 2;
+        let stingPress;
+        stingPress = 'pressed';
+        
+				url_path = f_draw_all_url();
+				url_path += outPinTextIn[currentButtonIn];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsIn[currentButtonIn],
+                       'counter' : counterIn[currentButtonIn],};
+				counterIn[currentButtonIn]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_in[currentButtonIn] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_input = payloadJSON[receiveJsonIn];
+          
+          //console.log(rx_input);
+          
+					if(rx_input === '0.0V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #9370DB';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'gray';
+					}
+					if(rx_input === '3.3V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #00008B';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'red';
+					}
+				});
+			}
+			//-----------------B U T T O N - I N   3
+			function func_in_3()
+			{
+        currentButtonIn = 3;
+        let stingPress;
+        stingPress = 'pressed';
+        
+				url_path = f_draw_all_url();
+				url_path += outPinTextIn[currentButtonIn];
+        payloadJSON = {'isPressed' : stingPress,
+                       'butWhatIs' : whatIsIn[currentButtonIn],
+                       'counter' : counterIn[currentButtonIn],};
+				counterIn[currentButtonIn]++;
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify(response_in[currentButtonIn] + ' : ' + JSON.stringify(payloadJSON)));
+					rx_input = payloadJSON[receiveJsonIn];
+          
+          //console.log(rx_input);
+          
+					if(rx_input === '0.0V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #9370DB';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'gray';
+					}
+					if(rx_input === '3.3V')
+					{
+          document.getElementById(response_in[currentButtonIn]).style.border = '3px solid #00008B';
+          document.getElementById(response_in[currentButtonIn]).style.background = 'red';
+					}
+				});
+			}
+			//-----------------D A T A   F O R   S L I D E R
+      
+      var sliderTxRx = [0, 0];
+      
+			//-----------------B U T T O N - S L I D E R _ T X
+      function func_slider_tx()
+      {
+        sliderTxRx[0] = document.getElementById('range_tx');
+        let sliderValue = sliderTxRx[0].value;
+        console.log('slider set = ' + sliderValue);
+        
+				url_path = f_draw_all_url();
+				url_path += 'slider';
+        payloadJSON = {'isPressed' : 'released',
+                       'butWhatIs' : 'slider',
+                       'value' : sliderValue,};
+        
+        console.log(url_path);
+        console.log(JSON.stringify(payloadJSON));
+        
+				loadData(url_path, payloadJSON)
+				.then(data =>
+				{
+					payloadJSON = data;
+          console.log(JSON.stringify('rx slider : ' + JSON.stringify(payloadJSON)));
+					sliderTxRx[1] = payloadJSON['value'];
+          
+          func_slider_rx();
+          
+				});
+        
+      }
+			//-----------------B U T T O N - S L I D E R _ R X
+      function func_slider_rx()
+      {
+        document.getElementById('range_rx').value = sliderTxRx[1];
+        //sliderTxRx[1] = document.getElementById('range_rx');
+        //console.log('slider get = ' + sliderTxRx[1].value);
+      }
+			
+//----------------------------------------------------------------------------------
+			//-----------------T I M E O U T - F U N C T I O N
+			function MySleep(ms)
+			{
+					return new Promise(resolve => setTimeout(resolve, ms));
+			}
+			async function MyTimeoutSleep(timeUser)
+			{
+        for (let i = 0; i < 5; i++)
+        {
+          await MySleep(i * timeUser);
+        }
+        alert('ESP32 не отвечает');
+			}
+			//-----------------C O D E - P H P - R E P L A C E M E N T - W I T H - T I M E O U T
+        
+			async function loadData(url = '', dataTx = {})
+			{
+				try
+				{
+					const response = await fetchWithTimeout(url, dataTx, {
+						timeout: 1000
+					});
+					const dataRx = await response.json();
+					return dataRx;
+				}
+				catch (error)
+				{
+					if(attemptCounter >= 1)
+					{
+						alert('ESP32 не отвечает');
+					}
+					else
+					{
+						//timeFunction();
+						MyTimeoutSleep(200);
+						loadData(url, dataTx);
+						attemptCounter++;
+					}
+				}
+			}
+			async function fetchWithTimeout(url, data, options = {})
+			{
+				const { timeout = 1000 } = options;
+				const abortController = new AbortController();
+				const id = setTimeout(() => abortController.abort(), timeout);
+				const response = await fetch(url,
+				{
+					signal: abortController.signal,
+					method: 'POST', // *GET, POST, PUT, DELETE, etc.
+					mode: 'cors', // no-cors, *cors, same-origin
+					cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+					credentials: 'same-origin', // include, *same-origin, omit
+					headers:
+					{
+						'Accept': 'application/json',
+					},
+					redirect: 'follow', // manual, *follow, error
+					referrerPolicy: 'no-referrer',	// no-referrer, *no-referrer-when-downgrade, origin,
+																					//origin-when-cross-origin, same-origin, strict-origin,
+																					//strict-origin-when-cross-origin, unsafe-url
+					body: JSON.stringify(data) // body data type must match \Content-Type\ header
+				});
+				clearTimeout(id);
+				return response;
+			}
+			//-----------------C O D E - P H P - R E P L A C E M E N T
+			// Example POST method implementation:
+			async function postData(url = '', data = {})
+			{
+				const response = await fetch(url,
+				{
+					method: 'POST', // *GET, POST, PUT, DELETE, etc.
+					mode: 'cors', // no-cors, *cors, same-origin
+					cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+					credentials: 'same-origin', // include, *same-origin, omit
+					headers:
+					{
+						'Accept': 'application/json',
+					},
+					redirect: 'follow', // manual, *follow, error
+					referrerPolicy: 'no-referrer',	// no-referrer, *no-referrer-when-downgrade, origin,
+																					//origin-when-cross-origin, same-origin, strict-origin,
+																					//strict-origin-when-cross-origin, unsafe-url
+					body: JSON.stringify(data) // body data type must match 'Content-Type' header
+				});
+				return response.json(); // parses JSON response into native JavaScript objects
+			}
+		</script>
+	</body>
+</html>
