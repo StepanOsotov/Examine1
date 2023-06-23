@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset='utf-8' />
+		<title>сбор данных</title>
+<!-- -------------------------------CASCADINGG-STYLE-SHEETS------------ -->
+		<style>
+			html, body
+			{
+				height: 80%;
+				margin: 0;
+			}
+      body
+      {
+        background-image: url("background.jpg");
+        -moz-background-size: 100%;
+        -webkit-background-size: 100%;
+        -o-background-size: 100%;
+        background-size: 100%;
+      }
+			.centerButtons
+			{
+				border: 10px solid Gainsboro;
+				max-width: 100%;
+				height: 50vh;
+				margin: auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.debugPress, .debugRX
+			{
+				border: 10px solid gray;
+				max-width: 900px;
+				height: 10vh;
+				margin: auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+        color: yellow;
+			}
+			#textIPaddr
+			{
+				border: 5px solid rgb(158, 34, 34);
+				max-width: 400px;
+				height: 5vh;
+				margin: auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+        color: rgb(27, 215, 49);
+			}
+			.roundButtons
+			{
+				margin: auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: DarkSlateGray;
+				
+				border-radius: 50%;
+				width: 8em;
+				height: 8em;
+				font-weight: bold;
+				font-size: 200%;
+				border: 2px solid Black;
+				margin: auto;
+				box-shadow: inset -20px 20px 20px rgba(0,0,0,.2), inset -20px 20px 20px rgba(0,0,0,.8);
+			}
+		</style>
+<!-- -------------------------------END-CSS---------------------------- -->
+	</head>
+	<body>
+		<p id='textIPaddr' ><b>IP address : </b>
+			<input id='idGetIP'
+             type='text'
+             placeholder='xxx.xxx.xxx.xxx'
+             value='192.168.137.199'/>
+		</p>
+		<div class='centerButtons'>
+			<a>
+				<div class='roundButtons'>
+					<div onclick='funcButU()'>
+						<big>U</big>
+					</div>
+				</div>
+			</a>
+			<a>
+				<div class='roundButtons'>
+					<div onclick='funcButI()'>
+						<big>I</big>
+					</div>
+				</div>
+			</a>
+			<a>
+				<div class='roundButtons'>
+					<div onclick='funcButR()'>
+						<big>R</big>
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class='debugPress'>debug Press</div>
+		<br>
+		<div class='debugRX'>receive data</div>
+<!-- -------------------------------JS-SCRIPT-CODE--------------------- -->
+	<script defer>
+		var url_path;
+		var globalTimeout = 2000;
+		function f_draw_all_url()
+		{
+      let text = document.getElementById('idGetIP').value;
+      return 'http://' + text + '/';
+			//return 'http://192.168.137.128/';
+      //return 'D:/OsotovSV/HOME/TopAcademy/AcademyExam1/web_esp/';
+		}
+		async function funcButU()
+		{
+			url_path = f_draw_all_url();
+			url_path += 'esp32_U.html';
+			console.info('url_path = ' + url_path);
+      
+			//var myWindow = window.open(url_path, '_self');
+      
+		}
+		async function funcButI()
+		{
+			url_path = f_draw_all_url();
+			url_path += 'esp32_I.html';
+			console.info('url_path = ' + url_path);
+      
+			//var myWindow = window.open(url_path, '_self');
+		}
+		async function funcButR()
+		{
+			url_path = f_draw_all_url();
+			url_path += 'esp8266_R.html';
+			console.info('url_path = ' + url_path);
+      
+			//var myWindow = window.open(url_path, '_self');
+		}
+	</script>
+<!-- -------------------------------END-JS-SCRIPT---------------------- -->
+	</body>
+</html>
